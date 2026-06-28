@@ -1,32 +1,35 @@
 name: Deploy to GitHub Pages
-name: Deploy Art Map to Basic
+name: Deploy Art Map
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-^­missions:
+  workflow_dispatch;
+
+permissions:
   contents: read
   pages: write
   id_token: write
+
 concurrency:
   group: pages
   cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        - uses: actions/setup-node@v4
-          with:
-            node-version: "22"
-            cache: "npm"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
       - run: npm ci
       - run: npm run build
         continue-on-error: true
       - run: cp public/index.html build/client/index.html
       - uses: actions/upload-pages-artifact@v3
-          with:
-            path: ./build/client
+        with:
+          path: ./build/client
 
   deploy:
     environment:
