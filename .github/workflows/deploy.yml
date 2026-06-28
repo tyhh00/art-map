@@ -32,16 +32,37 @@ jobs:
 
       - name: Build
         run: |
-          # Run build; ignore prerender exit code (known SPA mode issue)
           npm run build || true
-          # Verify client build exists (check for any manifest JS)
-          if ! ls build/client/assets/manifest-*.js 1>/dev/null; then
-            echo "ERROR: Client build not found"
-            ls -la build/client/
+
+          # Find the manifest file to get the entry point hash
+          MANIFEST=$(ls build/client/assets/manifest-*.js | head -1)
+          if [ -z "$MANIFEST" ]; then
+            echo "ERROR: No manifest found"
             exit 1
           fi
-          echo "Build artifacts confirmed:"
-          ls build/client/assets/manifest-*.js
+
+          # Extract the entry module path from the manifest
+          ENTRY=$(grep -o '"/art-map/assets/entry\.client[^"]*"' "$MANIFEST" | head -1 | tr -d '"')
+          echo "Entry point: $ENTRY"
+
+          # Generate index.html
+          cat > build/client/index.html << HTML
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Art Map</title>
+    <meta name="description" content="A 3D canvas where your art followers upload and display their drawings" />
+    <link rel="icon" href="/art-map/favicon.ico" type="image/x-icon" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">$ENTRY</script>
+  </body>
+</html>
+HTML
+          echo "Generated index.html with entry: $ENTRY"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
