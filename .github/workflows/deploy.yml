@@ -34,13 +34,14 @@ jobs:
         run: |
           # Run build; ignore prerender exit code (known SPA mode issue)
           npm run build || true
-          # Verify client build exists
-          if [ ! -f "build/client/assets/manifest.js" ]; then
+          # Verify client build exists (check for any manifest JS)
+          if ! ls build/client/assets/manifest-*.js 1>/dev/null; then
             echo "ERROR: Client build not found"
-            ls build/client/
+            ls -la build/client/
             exit 1
           fi
-          echo "Build artifacts confirmed"
+          echo "Build artifacts confirmed:"
+          ls build/client/assets/manifest-*.js
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
