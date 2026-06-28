@@ -32,21 +32,28 @@ jobs:
 
       - name: Build
         run: |
-          npm run build || true
+          set -e
+          npm run build
+        env:
+          CI: true
 
-          # Find the manifest file to get the entry point hash
+      - name: Generate index.html
+        run: |
+          set -e
+          # Find the manifest to get entry point hash
           MANIFEST=$(ls build/client/assets/manifest-*.js | head -1)
-          if [ -z "$MANIFEST" ]; then
-            echo "ERROR: No manifest found"
+          echo "Manifest: $MANIFEST"
+          
+          # Extract entry module path
+          ENTRY=$(grep -o '"/art-map/assets/entry\.client[^"]*"' "$MANIFEST" | head -1 | tr -d '"')
+          echo "Entry: $ENTRY"
+          
+          if [ -z "$ENTRY" ]; then
+            echo "ERROR: Could not extract entry point from manifest"
             exit 1
           fi
-
-          # Extract the entry module path from the manifest
-          ENTRY=$(grep -o '"/art-map/assets/entry\.client[^"]*"' "$MANIFEST" | head -1 | tr -d '"')
-          echo "Entry point: $ENTRY"
-
-          # Generate index.html
-          cat > build/client/index.html << HTML
+          
+          cat > build/client/index.html << EOF
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -58,11 +65,12 @@ jobs:
   </head>
   <body>
     <div id="root"></div>
-    <script type="module">$ENTRY</script>
+    <script type="module">${ENTRY}</script>
   </body>
 </html>
-HTML
-          echo "Generated index.html with entry: $ENTRY"
+EOF
+          echo "Generated index.html:"
+          cat build/client/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
