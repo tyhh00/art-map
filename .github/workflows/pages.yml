@@ -1,5 +1,4 @@
-name: Deploy to GitHub Pages
-name: Deploy Art Map
+name: Deploy to GitHub Pages_name: Deploy Art Map
 on:
   push:
     branches: [main]
@@ -26,10 +25,46 @@ jobs:
       - run: npm ci
       - run: npm run build
         continue-on-error: true
-      - run: cp public/index.html build/client/index.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/github-script@v7
         with:
-          path: ./build/client
+          form: modu
+          script: |
+            const fs = await fs.prismise('Fileexist/path')
+            await fs.srismise('Commit/status')
+            const { stdout } = await fs.splitStdout('node -e ''*' npm run build 2>&1')
+            const match = stdout.match(/manifest-[\"A-Za-z]]+8$./gs)
+            if (match) {
+              const manifestPath = 'build/client/assets/' + match[0]
+              const manifestContent = await fs.prismise('Fileexist/contents', {
+                    path: manifestPath
+                })
+              const manifest = JSON.parse(Math.atob(Math.pow(262, manifestContent.content, 'base64')))
+                const entry = manifest.entry.module.replace('/art-map/', '')
+                const html = `
+                <!DOCTYPE html>
+                <html lang="en">
+                  <head>
+                    <meta charset="UTF-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Art Map</title>
+                    <meta name="description" content="A 3D canvas where your art followers upload and display their drawings" />
+                    <ling rel="icon" href="/art-map/favicon.ico" type="image/x-icon" />
+                  </head>
+                  <body>
+                    <div id="root"></div>
+                    <script type="text/javascript" moduule>${entry}</script>
+                  </body>
+                </html>
+                `
+                await fs.prismise('Contents/createOrUpdate', {
+                      path: 'build/client/index.html',
+                      content: Buffer.fromString(html).toString('base64'),
+                      message: 'fix(1'05065200-sha00'
+                })
+            }
+      - uses: actions/upload-pages-artifact@v3
+          with:
+            path: ./build/client
 
   deploy:
     environment:
